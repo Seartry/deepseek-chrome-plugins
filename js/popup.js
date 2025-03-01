@@ -345,7 +345,13 @@ function setupEventListeners() {
   elements.newChatBtn.addEventListener('click', createNewConversation);
   
   // 打开设置页面
-  elements.settingsBtn.addEventListener('click', openSettingsPage);
+  if (elements.settingsBtn) {
+    elements.settingsBtn.addEventListener('click', () => {
+      openSettingsPage();
+      // 可选：关闭弹出窗口
+      window.close();
+    });
+  }
   
   // 最小化
   elements.minimizeBtn.addEventListener('click', () => window.close());
@@ -499,9 +505,19 @@ function handleStreamResponse(content) {
     
     const contentEl = document.createElement('div');
     contentEl.className = 'message-content typing-animation';
-    contentEl.textContent = '';
+    
+    // 创建底部信息栏
+    const footerEl = document.createElement('div');
+    footerEl.className = 'message-footer';
+    
+    // 添加时间戳
+    const timeEl = document.createElement('div');
+    timeEl.className = 'message-time';
+    timeEl.textContent = new Date().toLocaleTimeString();
+    footerEl.appendChild(timeEl);
     
     typingMessageEl.appendChild(contentEl);
+    typingMessageEl.appendChild(footerEl);
     elements.chatMessages.appendChild(typingMessageEl);
     
     // 添加新的助手消息到对话记录
@@ -514,14 +530,27 @@ function handleStreamResponse(content) {
   
   // 更新消息内容
   const contentEl = typingMessageEl.querySelector('.message-content');
-  if (contentEl) {
-    contentEl.textContent += content;
-  }
-  
-  // 更新当前对话中最后一条助手消息的内容
   const lastMessage = currentConversation.messages[currentConversation.messages.length - 1];
-  if (lastMessage && lastMessage.role === 'assistant') {
+  
+  if (contentEl && lastMessage && lastMessage.role === 'assistant') {
+    // 更新消息内容
     lastMessage.content += content;
+    
+    // 使用 Markdown 渲染器实时渲染内容
+    if (settings?.markdownRender !== false) {
+      try {
+        contentEl.innerHTML = SimpleMarkdown.parse(lastMessage.content);
+        // 为代码块添加样式
+        contentEl.querySelectorAll('pre code').forEach((block) => {
+          block.classList.add('code-block');
+        });
+      } catch (error) {
+        console.error('Markdown 渲染失败:', error);
+        contentEl.textContent = lastMessage.content;
+      }
+    } else {
+      contentEl.textContent = lastMessage.content;
+    }
     
     // 更新对话时间
     currentConversation.updatedAt = Date.now();
@@ -529,6 +558,15 @@ function handleStreamResponse(content) {
     // 自动保存对话
     if (settings?.autoSave) {
       saveCurrentConversation();
+    }
+  }
+  
+  // 如果消息完成，移除打字动画类
+  if (content.endsWith('\n\n') || content.endsWith('.') || content.endsWith('。')) {
+    typingMessageEl.classList.remove('typing');
+    const contentEl = typingMessageEl.querySelector('.message-content');
+    if (contentEl) {
+      contentEl.classList.remove('typing-animation');
     }
   }
   
@@ -666,7 +704,22 @@ async function saveCurrentConversation() {
  * 打开设置页面
  */
 function openSettingsPage() {
-  chrome.runtime.openOptionsPage();
+  try {
+    // 使用 chrome.runtime.openOptionsPage 打开设置页面
+    chrome.runtime.openOptionsPage(() => {
+      if (chrome.runtime.lastError) {
+        console.error('打开设置页面失败:', chrome.runtime.lastError);
+        // 如果 openOptionsPage 失败，尝试使用 chrome.runtime.getURL
+        const optionsUrl = chrome.runtime.getURL('options.html');
+        chrome.tabs.create({ url: optionsUrl });
+      }
+    });
+  } catch (error) {
+    console.error('打开设置页面错误:', error);
+    // 如果出现错误，使用备用方法
+    const optionsUrl = chrome.runtime.getURL('options.html');
+    chrome.tabs.create({ url: optionsUrl });
+  }
 }
 
 /**
