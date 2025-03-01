@@ -9,11 +9,47 @@ let settings = null;
 let conversations = [];
 let selectedFiles = [];
 let isTyping = false;
+let markedInstance = null;
+
+/**
+ * 简单的 Markdown 解析器
+ */
+const SimpleMarkdown = {
+  parse: function(text) {
+    if (!text) return '';
+    
+    return text
+      // 代码块
+      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+      // 行内代码
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      // 标题
+      .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+      // 粗体
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      // 斜体
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      // 链接
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+      // 列表
+      .replace(/^\s*-\s(.+)/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+      // 引用
+      .replace(/^\> (.+)/gm, '<blockquote>$1</blockquote>')
+      // 换行
+      .replace(/\n/g, '<br>');
+  }
+};
 
 // 初始化
 document.addEventListener('DOMContentLoaded', async () => {
   // 初始化DOM元素引用
   initializeElements();
+  
+  // 设置 Markdown 解析器
+  markedInstance = SimpleMarkdown;
   
   // 加载设置
   await loadSettings();
@@ -210,16 +246,17 @@ function createMessageElement(message) {
   const contentEl = document.createElement('div');
   contentEl.className = 'message-content';
   
-  // 根据设置决定是否渲染Markdown
-  if (settings.markdownRender && message.role === 'assistant') {
-    // 这里可以使用marked.js等库来渲染Markdown
-    // 简单实现，仅处理代码块
-    const formattedContent = formatMessageContent(message.content);
-    contentEl.innerHTML = formattedContent;
-    
-    // 如果启用了代码高亮，为代码块添加高亮效果
-    if (settings.codeHighlight) {
-      highlightCodeBlocks(contentEl);
+  // 根据角色和设置决定是否渲染Markdown
+  if (message.role === 'assistant' && settings?.markdownRender !== false) {
+    try {
+      contentEl.innerHTML = SimpleMarkdown.parse(message.content);
+      // 代码高亮
+      contentEl.querySelectorAll('pre code').forEach((block) => {
+        block.classList.add('code-block');
+      });
+    } catch (error) {
+      console.error('Markdown 渲染失败:', error);
+      contentEl.textContent = message.content;
     }
   } else {
     contentEl.textContent = message.content;
@@ -227,25 +264,57 @@ function createMessageElement(message) {
   
   messageEl.appendChild(contentEl);
   
+  // 创建底部信息栏（复制按钮和时间）
+  const footerEl = document.createElement('div');
+  footerEl.className = 'message-footer';
+  
+  // 复制按钮
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'copy-button';
+  copyBtn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.242a2 2 0 0 0-.602-1.43L16.083 2.57A2 2 0 0 0 14.685 2H10a2 2 0 0 0-2 2z"/>
+      <path d="M16 18v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/>
+    </svg>
+    复制
+  `;
+  
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      copyBtn.classList.add('copied');
+      copyBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+        已复制
+      `;
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        copyBtn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.242a2 2 0 0 0-.602-1.43L16.083 2.57A2 2 0 0 0 14.685 2H10a2 2 0 0 0-2 2z"/>
+            <path d="M16 18v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/>
+          </svg>
+          复制
+        `;
+      }, 2000);
+    } catch (error) {
+      console.error('复制失败:', error);
+      showToast('复制失败', 'error');
+    }
+  });
+  
   // 时间戳
   const timeEl = document.createElement('div');
   timeEl.className = 'message-time';
   const messageTime = message.timestamp ? new Date(message.timestamp) : new Date();
   timeEl.textContent = messageTime.toLocaleTimeString();
-  messageEl.appendChild(timeEl);
   
-  // 消息操作按钮
-  const actionsEl = document.createElement('div');
-  actionsEl.className = 'message-actions';
-  
-  // 复制按钮
-  const copyBtn = document.createElement('button');
-  copyBtn.title = '复制';
-  copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/><path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/></svg>';
-  copyBtn.addEventListener('click', () => copyMessageContent(message.content));
-  
-  actionsEl.appendChild(copyBtn);
-  messageEl.appendChild(actionsEl);
+  // 添加到底部信息栏
+  footerEl.appendChild(copyBtn);
+  footerEl.appendChild(timeEl);
+  messageEl.appendChild(footerEl);
   
   return messageEl;
 }
@@ -594,19 +663,6 @@ async function saveCurrentConversation() {
 }
 
 /**
- * 复制消息内容
- * @param {string} content - 要复制的内容
- */
-function copyMessageContent(content) {
-  navigator.clipboard.writeText(content)
-    .then(() => showToast('已复制到剪贴板', 'success'))
-    .catch(error => {
-      console.error('复制失败:', error);
-      showToast('复制失败', 'error');
-    });
-}
-
-/**
  * 打开设置页面
  */
 function openSettingsPage() {
@@ -773,4 +829,75 @@ toastStyles.textContent = `
   }
 `;
 
-document.head.appendChild(toastStyles); 
+document.head.appendChild(toastStyles);
+
+/**
+ * 创建消息操作按钮组
+ * @param {HTMLElement} messageElement - 消息元素
+ * @param {string} content - 消息内容
+ */
+function createMessageActions(messageElement, content) {
+  const actionsDiv = document.createElement('div');
+  actionsDiv.className = 'message-actions';
+  
+  // 复制按钮
+  const copyButton = document.createElement('button');
+  copyButton.className = 'action-button copy-button';
+  copyButton.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+    <span class="copy-tooltip">复制</span>
+  `;
+  
+  copyButton.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      copyButton.classList.add('copy-success');
+      const tooltip = copyButton.querySelector('.copy-tooltip');
+      tooltip.textContent = '已复制';
+      setTimeout(() => {
+        copyButton.classList.remove('copy-success');
+        tooltip.textContent = '复制';
+      }, 1000);
+    } catch (err) {
+      console.error('复制失败:', err);
+    }
+  });
+  
+  actionsDiv.appendChild(copyButton);
+  messageElement.appendChild(actionsDiv);
+}
+
+/**
+ * 添加消息到聊天界面
+ * @param {string} content - 消息内容
+ * @param {string} role - 消息角色 ('user' 或 'assistant')
+ */
+function addMessage(content, role) {
+  const messageElement = document.createElement('div');
+  messageElement.className = `message ${role}-message`;
+  
+  const contentElement = document.createElement('div');
+  contentElement.className = 'message-content';
+  
+  if (role === 'assistant') {
+    // 使用 marked 渲染 Markdown
+    contentElement.innerHTML = marked.parse(content);
+    // 代码高亮
+    contentElement.querySelectorAll('pre code').forEach((block) => {
+      hljs.highlightElement(block);
+    });
+  } else {
+    contentElement.textContent = content;
+  }
+  
+  messageElement.appendChild(contentElement);
+  
+  // 添加消息操作按钮组
+  createMessageActions(messageElement, content);
+  
+  elements.chatMessages.appendChild(messageElement);
+  elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+} 

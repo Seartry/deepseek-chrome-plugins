@@ -187,6 +187,104 @@ body {
   border-radius: 12px;
   position: relative;
   word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.message-content h1,
+.message-content h2,
+.message-content h3,
+.message-content h4,
+.message-content h5,
+.message-content h6 {
+  margin: 1em 0 0.5em;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.message-content h1 { font-size: 1.5em; }
+.message-content h2 { font-size: 1.4em; }
+.message-content h3 { font-size: 1.3em; }
+.message-content h4 { font-size: 1.2em; }
+.message-content h5 { font-size: 1.1em; }
+.message-content h6 { font-size: 1em; }
+
+.message-content p {
+  margin: 0.5em 0;
+}
+
+.message-content ul,
+.message-content ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.message-content li {
+  margin: 0.3em 0;
+}
+
+.message-content a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.message-content a:hover {
+  text-decoration: underline;
+}
+
+.message-content blockquote {
+  margin: 0.5em 0;
+  padding: 0.5em 1em;
+  border-left: 4px solid var(--primary-color);
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-color);
+}
+
+.message-content code {
+  font-family: 'Menlo', 'Monaco', 'Consolas', monospace;
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.message-content pre {
+  margin: 0.5em 0;
+  padding: 1em;
+  border-radius: 6px;
+  background: #1e1e1e;
+  overflow-x: auto;
+}
+
+.message-content pre code {
+  padding: 0;
+  background: none;
+  color: #e0e0e0;
+}
+
+.message-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+}
+
+.message-content th,
+.message-content td {
+  padding: 0.5em;
+  border: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.message-content th {
+  background: rgba(0, 0, 0, 0.05);
+  font-weight: 600;
+}
+
+.message-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 0.5em 0;
 }
 
 .user .message-content {
@@ -201,34 +299,135 @@ body {
   border-bottom-left-radius: 4px;
 }
 
+.message-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+  padding-right: 4px;
+}
+
 .message-time {
   font-size: 12px;
   color: #888;
-  margin-top: 4px;
-  text-align: right;
 }
 
+.copy-button {
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  font-size: 12px;
+  gap: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-color);
+}
+
+.copy-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.copy-button.copied {
+  color: var(--primary-color);
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+  .copy-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .message-content blockquote {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .message-content code {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .message-content th {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+/* 消息操作按钮组 */
 .message-actions {
-  display: none;
   position: absolute;
-  right: 10px;
-  top: 5px;
+  top: 8px;
+  right: 8px;
+  display: none;
+  gap: 8px;
+  background: var(--bg-secondary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .message:hover .message-actions {
-  display: block;
+  display: flex;
 }
 
-.message-actions button {
-  background: none;
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
   border: none;
-  padding: 4px;
+  background: transparent;
+  color: var(--text-secondary);
   cursor: pointer;
-  opacity: 0.7;
+  transition: all 0.2s;
 }
 
-.message-actions button:hover {
+.action-button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.action-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* 复制按钮的工具提示 */
+.copy-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--bg-tooltip);
+  color: var(--text-tooltip);
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.action-button:hover .copy-tooltip {
   opacity: 1;
+}
+
+/* 复制成功的动画效果 */
+@keyframes copySuccess {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.copy-success {
+  animation: copySuccess 0.3s ease-in-out;
 }
 
 /* 输入区域 */
