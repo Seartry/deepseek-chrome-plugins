@@ -75,6 +75,36 @@ document.addEventListener('DOMContentLoaded', async () => {
  * 初始化DOM元素引用
  */
 function initializeElements() {
+  // 首先确保工具栏存在
+  let toolbar = document.querySelector('.toolbar');
+  if (!toolbar) {
+    toolbar = document.createElement('div');
+    toolbar.className = 'toolbar';
+    document.querySelector('.chat-container')?.prepend(toolbar);
+  }
+
+  // 创建历史按钮
+  const historyBtn = document.createElement('button');
+  historyBtn.className = 'toolbar-button history-button';
+  historyBtn.title = '历史会话';
+  historyBtn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="4" y1="8" x2="20" y2="8"></line>
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="16" x2="20" y2="16"></line>
+    </svg>
+  `;
+
+  // 获取新会话按钮
+  const newChatBtn = document.getElementById('newChatBtn');
+  if (newChatBtn && newChatBtn.parentNode) {
+    // 将历史按钮插入到新会话按钮前面
+    newChatBtn.parentNode.insertBefore(historyBtn, newChatBtn);
+  } else {
+    // 如果找不到新会话按钮，就添加到工具栏开头
+    toolbar.insertBefore(historyBtn, toolbar.firstChild);
+  }
+
   elements = {
     historyList: document.getElementById('historyList'),
     chatMessages: document.getElementById('chatMessages'),
@@ -82,10 +112,53 @@ function initializeElements() {
     sendBtn: document.getElementById('sendBtn'),
     fileInput: document.getElementById('fileInput'),
     filePreview: document.getElementById('filePreview'),
+    historyBtn: historyBtn,
     newChatBtn: document.getElementById('newChatBtn'),
     settingsBtn: document.getElementById('settingsBtn'),
     minimizeBtn: document.getElementById('minimizeBtn')
   };
+
+  // 添加工具栏样式
+  const toolbarStyles = document.createElement('style');
+  toolbarStyles.textContent = `
+    .toolbar {
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      background-color: var(--bg-color);
+    }
+
+    .toolbar-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      padding: 6px;
+      border: none;
+      background: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-color);
+      transition: all 0.2s ease;
+    }
+
+    .toolbar-button:hover {
+      background-color: var(--hover-color);
+    }
+
+    .toolbar-button svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .history-button {
+      margin-right: 4px;
+    }
+  `;
+  document.head.appendChild(toolbarStyles);
   
   // 检查必要元素是否存在
   for (const [key, element] of Object.entries(elements)) {
@@ -363,6 +436,11 @@ function setupEventListeners() {
     }
     sendResponse({ received: true });
   });
+
+  // 历史会话按钮点击事件
+  if (elements.historyBtn) {
+    elements.historyBtn.addEventListener('click', toggleHistoryPanel);
+  }
 }
 
 /**
@@ -953,4 +1031,282 @@ function addMessage(content, role) {
   
   elements.chatMessages.appendChild(messageElement);
   elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-} 
+}
+
+/**
+ * 切换历史面板的显示状态
+ */
+function toggleHistoryPanel() {
+  const historyPanel = document.querySelector('.history-panel');
+  
+  if (!historyPanel) {
+    // 如果面板不存在，创建一个新的
+    createHistoryPanel();
+  } else {
+    // 如果面板存在，切换其显示状态
+    historyPanel.classList.toggle('show');
+  }
+}
+
+/**
+ * 创建历史会话面板
+ */
+function createHistoryPanel() {
+  const panel = document.createElement('div');
+  panel.className = 'history-panel';
+  
+  // 添加面板标题
+  const header = document.createElement('div');
+  header.className = 'history-panel-header';
+  header.innerHTML = `
+    <h3>历史会话</h3>
+    <button class="close-button">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+  `;
+  
+  // 添加会话列表容器
+  const listContainer = document.createElement('div');
+  listContainer.className = 'history-list-container';
+  
+  // 渲染会话列表
+  conversations.forEach(conv => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    if (currentConversation && conv.id === currentConversation.id) {
+      item.classList.add('active');
+    }
+    
+    // 格式化时间
+    const date = new Date(conv.updatedAt);
+    const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    
+    item.innerHTML = `
+      <div class="history-item-title">${conv.title || '新对话'}</div>
+      <div class="history-item-date">${formattedDate}</div>
+    `;
+    
+    item.addEventListener('click', () => {
+      loadConversation(conv.id);
+      toggleHistoryPanel();
+    });
+    
+    listContainer.appendChild(item);
+  });
+  
+  panel.appendChild(header);
+  panel.appendChild(listContainer);
+  document.body.appendChild(panel);
+  
+  // 添加关闭按钮事件
+  const closeBtn = header.querySelector('.close-button');
+  closeBtn.addEventListener('click', () => {
+    panel.classList.remove('show');
+  });
+  
+  // 显示面板
+  setTimeout(() => panel.classList.add('show'), 10);
+  
+  // 添加点击外部关闭面板
+  document.addEventListener('click', (e) => {
+    if (panel.classList.contains('show') && 
+        !panel.contains(e.target) && 
+        !elements.historyBtn.contains(e.target)) {
+      panel.classList.remove('show');
+    }
+  });
+}
+
+// 添加必要的CSS
+const historyStyles = document.createElement('style');
+historyStyles.textContent = `
+  .history-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+  }
+  
+  .history-button:hover {
+    background-color: var(--hover-color);
+    border-radius: 6px;
+  }
+  
+  .history-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(200, 220, 255, 0.2), rgba(180, 210, 255, 0.2));
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(var(--border-color-rgb), 0.1);
+  }
+  
+  .history-panel.show {
+    transform: translateX(0);
+  }
+  
+  .history-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: linear-gradient(to right, rgba(190, 215, 255, 0.95), rgba(200, 225, 255, 0.85));
+    border-bottom: 1px solid rgba(var(--border-color-rgb), 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .history-panel-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    letter-spacing: 0.5px;
+  }
+  
+  .history-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background-color: rgba(210, 230, 255, 0.2);
+  }
+  
+  .history-item {
+    padding: 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(var(--item-bg-color-rgb), 0.98);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(var(--border-color-rgb), 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .history-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(var(--primary-color-rgb), 0.6), rgba(var(--primary-color-rgb), 0.2));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .history-item:hover {
+    background: rgba(var(--hover-color-rgb), 0.98);
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.12);
+  }
+  
+  .history-item:hover::before {
+    opacity: 1;
+  }
+  
+  .history-item.active {
+    background: rgba(var(--active-color-rgb), 0.98);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.3);
+    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.15);
+  }
+  
+  .history-item.active::before {
+    opacity: 1;
+    background: linear-gradient(to bottom, rgba(var(--primary-color-rgb), 0.8), rgba(var(--primary-color-rgb), 0.4));
+  }
+  
+  .history-item-title {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-weight: 500;
+    padding-left: 8px;
+  }
+  
+  .history-item-date {
+    font-size: 12px;
+    color: var(--secondary-text-color);
+    opacity: 0.8;
+    padding-left: 8px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .history-item-date::before {
+    content: '•';
+    margin-right: 5px;
+    color: rgba(var(--primary-color-rgb), 0.6);
+  }
+  
+  .close-button {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: var(--text-color);
+    opacity: 0.7;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .close-button:hover {
+    opacity: 1;
+    background-color: rgba(var(--hover-color-rgb), 0.3);
+    transform: scale(1.05);
+  }
+
+  /* 优化滚动条样式 */
+  .history-list-container::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .history-list-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .history-list-container::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--text-color-rgb), 0.15);
+    border-radius: 20px;
+  }
+
+  .history-list-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(var(--text-color-rgb), 0.25);
+  }
+
+  /* 添加渐变阴影效果 */
+  .history-list-container::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: linear-gradient(to top, rgba(var(--bg-color-rgb), 0.2), transparent);
+    pointer-events: none;
+  }
+`;
+
+document.head.appendChild(historyStyles); 

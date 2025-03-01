@@ -5,6 +5,110 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DeepSeek对话助手</title>
   <link rel="stylesheet" href="css/popup.css">
+  <style>
+    /* 输入区域样式 */
+    .chat-input-container {
+      position: sticky;
+      bottom: 0;
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-color);
+      border-top: 1px solid var(--border-color);
+      min-height: 80px;
+    }
+
+    .input-area {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 文件上传区域样式 */
+    .file-upload {
+      flex: 0 0 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-area-left {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+    }
+
+    .input-area-right {
+      flex: 0 0 60px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* 调整按钮样式 */
+    .file-upload-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--input-bg-color);
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 0;
+    }
+
+    .send-btn {
+      flex: 1;
+      height: 100%;
+    }
+
+    #sendBtn {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 6px;
+      background: var(--primary-color);
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #userInput {
+      width: 100%;
+      height: 100%;
+      min-height: 56px;
+      max-height: 200px;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--input-bg-color);
+      color: var(--text-color);
+      font-size: 14px;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+
+    #userInput:focus {
+      border-color: var(--primary-color);
+    }
+
+    .file-upload-btn:hover {
+      background: var(--hover-color);
+      border-color: var(--primary-color);
+    }
+
+    #sendBtn:hover {
+      background: var(--primary-color-dark);
+    }
+  </style>
 </head>
 <body style="min-width: 400px; min-height: 600px;">
   <div class="container">
@@ -50,24 +154,29 @@
         </div>
         
         <div class="chat-input-container">
-          <div class="file-upload">
-            <label for="fileInput" class="file-upload-btn" title="上传文件">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
-              </svg>
-            </label>
-            <input type="file" id="fileInput" multiple style="display: none">
-            <div class="file-preview" id="filePreview"></div>
-          </div>
-          
           <div class="input-area">
-            <textarea id="userInput" placeholder="在此输入您的问题..."></textarea>
-            <button id="sendBtn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471-.47 1.178Z"/>
-              </svg>
-            </button>
+            <div class="file-upload">
+              <label for="fileInput" class="file-upload-btn" title="上传文件">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                  <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                </svg>
+              </label>
+              <input type="file" id="fileInput" multiple style="display: none">
+              <div class="file-preview" id="filePreview"></div>
+            </div>
+            <div class="input-area-left">
+              <textarea id="userInput" placeholder="在此输入您的问题..."></textarea>
+            </div>
+            <div class="input-area-right">
+              <div class="send-btn">
+                <button id="sendBtn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.002.002.26.41a.5.5 0 0 0 .886-.083l6-15Zm-1.833 1.89L6.637 10.07l-.215-.338a.5.5 0 0 0-.154-.154l-.338-.215 7.494-7.494 1.178-.471-.47 1.178Z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
