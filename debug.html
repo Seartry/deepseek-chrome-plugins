@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepSeek助手 - 调试</title>
+  <style>
+    body {
+      font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #1E88E5;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 10px;
+    }
+    .card {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      background-color: #f9f9f9;
+    }
+    .success {
+      color: #4caf50;
+    }
+    .error {
+      color: #f44336;
+    }
+    .warning {
+      color: #ff9800;
+    }
+    button {
+      background-color: #1E88E5;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background-color: #1976D2;
+    }
+    pre {
+      background-color: #f1f1f1;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    #logs {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>DeepSeek助手 - 调试页面</h1>
+  
+  <div class="card">
+    <h2>扩展信息</h2>
+    <p>版本: <span id="extensionVersion">加载中...</span></p>
+    <p>状态: <span id="extensionStatus">检查中...</span></p>
+  </div>
+  
+  <div class="card">
+    <h2>测试功能</h2>
+    <button id="testStorage">测试存储</button>
+    <button id="testBackground">测试后台通信</button>
+    <button id="testPermissions">测试权限</button>
+    <button id="clearStorage">清除存储数据</button>
+  </div>
+  
+  <div class="card">
+    <h2>文件检查</h2>
+    <ul id="filesList">
+      <li>manifest.json: <span class="checkResult">检查中...</span></li>
+      <li>popup.html: <span class="checkResult">检查中...</span></li>
+      <li>popup.js: <span class="checkResult">检查中...</span></li>
+      <li>background.js: <span class="checkResult">检查中...</span></li>
+      <li>options.html: <span class="checkResult">检查中...</span></li>
+      <li>options.js: <span class="checkResult">检查中...</span></li>
+    </ul>
+  </div>
+  
+  <div class="card">
+    <h2>日志</h2>
+    <div id="logs"></div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 获取扩展版本
+      const manifestData = chrome.runtime.getManifest();
+      document.getElementById('extensionVersion').textContent = manifestData.version;
+      document.getElementById('extensionStatus').textContent = '正常加载';
+      document.getElementById('extensionStatus').className = 'success';
+      
+      // 记录日志
+      function log(message, type = 'info') {
+        const logs = document.getElementById('logs');
+        const logEntry = document.createElement('div');
+        logEntry.className = type;
+        logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        logs.appendChild(logEntry);
+        logs.scrollTop = logs.scrollHeight;
+      }
+      
+      log('调试页面已加载');
+      
+      // 测试存储
+      document.getElementById('testStorage').addEventListener('click', async () => {
+        try {
+          await chrome.storage.local.set({ testKey: 'testValue' });
+          const data = await chrome.storage.local.get('testKey');
+          if (data.testKey === 'testValue') {
+            log('存储测试成功', 'success');
+          } else {
+            log('存储测试失败: 值不匹配', 'error');
+          }
+        } catch (error) {
+          log(`存储测试错误: ${error.message}`, 'error');
+        }
+      });
+      
+      // 测试后台通信
+      document.getElementById('testBackground').addEventListener('click', async () => {
+        try {
+          const response = await chrome.runtime.sendMessage({ action: 'getSettings' });
+          log(`后台通信测试: ${JSON.stringify(response)}`, response.success ? 'success' : 'error');
+        } catch (error) {
+          log(`后台通信错误: ${error.message}`, 'error');
+        }
+      });
+      
+      // 测试权限
+      document.getElementById('testPermissions').addEventListener('click', async () => {
+        try {
+          const permissions = manifestData.permissions;
+          log(`已申请权限: ${permissions.join(', ')}`, 'info');
+        } catch (error) {
+          log(`权限测试错误: ${error.message}`, 'error');
+        }
+      });
+      
+      // 清除存储数据
+      document.getElementById('clearStorage').addEventListener('click', async () => {
+        try {
+          await chrome.storage.local.clear();
+          log('存储数据已清除', 'warning');
+        } catch (error) {
+          log(`清除存储错误: ${error.message}`, 'error');
+        }
+      });
+      
+      // 检查关键文件
+      const filesToCheck = [
+        'manifest.json', 
+        'popup.html', 
+        'js/popup.js', 
+        'js/background.js', 
+        'options.html', 
+        'js/options.js'
+      ];
+      
+      const checkResults = document.querySelectorAll('.checkResult');
+      filesToCheck.forEach((file, index) => {
+        fetch(chrome.runtime.getURL(file))
+          .then(response => {
+            if (response.ok) {
+              checkResults[index].textContent = '已找到';
+              checkResults[index].className = 'checkResult success';
+            } else {
+              checkResults[index].textContent = '未找到';
+              checkResults[index].className = 'checkResult error';
+            }
+          })
+          .catch(error => {
+            checkResults[index].textContent = '错误: ' + error.message;
+            checkResults[index].className = 'checkResult error';
+          });
+      });
+    });
+  </script>
+</body>
+</html> 

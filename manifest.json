@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "DeepSeek对话助手",
+  "version": "1.0.0",
+  "description": "通过对话框与DeepSeek对话，支持上传文件、保存对话记录和快捷复制。",
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://api.deepseek.com/*"
+  ],
+  "background": {
+    "service_worker": "js/background.js",
+    "type": "module"
+  },
+  "options_page": "options.html",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline';"
+  },
+  "web_accessible_resources": [{
+    "resources": [
+      "options.html",
+      "debug.html",
+      "assets/icons/*.svg",
+      "css/*.css",
+      "js/*.js"
+    ],
+    "matches": ["<all_urls>"]
+  }]
+} 

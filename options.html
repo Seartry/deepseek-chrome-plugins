@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeepSeek助手 - 设置</title>
+  <link rel="stylesheet" href="css/options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-title">
+        <img src="assets/icons/icon48.png" alt="DeepSeek助手" class="logo">
+        <h1>DeepSeek助手 - 设置</h1>
+      </div>
+    </header>
+    
+    <main>
+      <div class="settings-container">
+        <div class="settings-sidebar">
+          <ul class="settings-nav">
+            <li class="active" data-tab="api-settings">API设置</li>
+            <li data-tab="ui-settings">界面设置</li>
+            <li data-tab="chat-settings">对话设置</li>
+            <li data-tab="storage-settings">存储设置</li>
+            <li data-tab="about">关于</li>
+          </ul>
+        </div>
+        
+        <div class="settings-content">
+          <!-- API设置 -->
+          <div class="settings-tab active" id="api-settings">
+            <h2>API 设置</h2>
+            <div class="setting-group">
+              <label for="apiKey">DeepSeek API Key</label>
+              <input type="password" id="apiKey" placeholder="输入您的DeepSeek API Key">
+              <button id="testApiBtn" class="test-btn">测试连接</button>
+              <div id="apiStatus" class="status"></div>
+            </div>
+            
+            <div class="setting-group">
+              <label for="modelSelect">选择模型</label>
+              <select id="modelSelect">
+                <option value="deepseek-chat">DeepSeek-V3 (默认)</option>
+                <option value="deepseek-reasoner">DeepSeek-R1 (推理模型)</option>
+              </select>
+            </div>
+            
+            <div class="setting-group">
+              <label>高级参数</label>
+              <div class="slider-container">
+                <label for="temperature">Temperature（创造性）</label>
+                <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+                <span id="temperatureValue">0.7</span>
+              </div>
+              
+              <div class="slider-container">
+                <label for="maxTokens">最大输出长度</label>
+                <input type="range" id="maxTokens" min="100" max="8000" step="100" value="2000">
+                <span id="maxTokensValue">2000</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 界面设置 -->
+          <div class="settings-tab" id="ui-settings">
+            <h2>界面设置</h2>
+            <div class="setting-group">
+              <label for="themeSelect">主题</label>
+              <select id="themeSelect">
+                <option value="auto">跟随系统</option>
+                <option value="light">明亮模式</option>
+                <option value="dark">深色模式</option>
+              </select>
+              <div class="theme-preview" id="themePreview">
+                <div class="preview-chat">
+                  <div class="preview-message user">用户消息示例</div>
+                  <div class="preview-message assistant">助手回复示例</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="setting-group">
+              <label for="fontSizeSelect">字体大小</label>
+              <select id="fontSizeSelect">
+                <option value="small">小</option>
+                <option value="medium" selected>中</option>
+                <option value="large">大</option>
+              </select>
+            </div>
+            
+            <div class="setting-group checkbox-group">
+              <label class="checkbox-container">
+                <input type="checkbox" id="typingAnimationToggle" checked>
+                <span class="checkbox-text">启用打字动画效果</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- 对话设置 -->
+          <div class="settings-tab" id="chat-settings">
+            <h2>对话设置</h2>
+            <div class="setting-group">
+              <label for="systemPrompt">系统提示词</label>
+              <textarea id="systemPrompt" rows="4" placeholder="设置默认的系统提示词...">你是由DeepSeek开发的AI助手，你的目标是尽可能地帮助用户。</textarea>
+            </div>
+            
+            <div class="setting-group checkbox-group">
+              <label class="checkbox-container">
+                <input type="checkbox" id="streamOutputToggle" checked>
+                <span class="checkbox-text">启用流式输出（实时显示回复）</span>
+              </label>
+            </div>
+            
+            <div class="setting-group checkbox-group">
+              <label class="checkbox-container">
+                <input type="checkbox" id="markdownRenderToggle" checked>
+                <span class="checkbox-text">启用Markdown渲染</span>
+              </label>
+            </div>
+            
+            <div class="setting-group checkbox-group">
+              <label class="checkbox-container">
+                <input type="checkbox" id="codeHighlightToggle" checked>
+                <span class="checkbox-text">启用代码高亮</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- 存储设置 -->
+          <div class="settings-tab" id="storage-settings">
+            <h2>存储设置</h2>
+            <div class="setting-group">
+              <label for="exportPath">对话记录导出路径</label>
+              <input type="text" id="exportPath" placeholder="选择导出路径...">
+              <button id="browseFolderBtn" class="browse-btn">浏览...</button>
+            </div>
+            
+            <div class="setting-group checkbox-group">
+              <label class="checkbox-container">
+                <input type="checkbox" id="autoSaveToggle" checked>
+                <span class="checkbox-text">自动保存对话记录</span>
+              </label>
+            </div>
+            
+            <div class="setting-group">
+              <label for="exportFormatSelect">默认导出格式</label>
+              <select id="exportFormatSelect">
+                <option value="md">Markdown (.md)</option>
+                <option value="txt">纯文本 (.txt)</option>
+                <option value="pdf">PDF (.pdf)</option>
+              </select>
+            </div>
+            
+            <div class="setting-group">
+              <button id="clearHistoryBtn" class="danger-btn">清除所有对话历史</button>
+              <p class="warning-text">注意：此操作不可撤销</p>
+            </div>
+          </div>
+          
+          <!-- 关于 -->
+          <div class="settings-tab" id="about">
+            <h2>关于 DeepSeek 助手</h2>
+            <div class="about-content">
+              <p>DeepSeek助手是一款Chrome浏览器插件，允许用户通过优雅的对话界面与DeepSeek AI进行交流。</p>
+              
+              <h3>功能特点</h3>
+              <ul>
+                <li>实时文本对话界面</li>
+                <li>支持文件上传分析</li>
+                <li>对话历史保存与管理</li>
+                <li>Markdown渲染和代码高亮</li>
+                <li>个性化设置与主题</li>
+              </ul>
+              
+              <h3>版本信息</h3>
+              <p>当前版本：v1.0.0</p>
+              
+              <h3>致谢</h3>
+              <p>感谢DeepSeek团队提供的强大API支持。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <footer>
+      <div class="actions">
+        <button id="saveBtn" class="primary-btn">保存设置</button>
+        <button id="resetBtn" class="secondary-btn">重置为默认</button>
+      </div>
+    </footer>
+  </div>
+  
+  <script src="js/options.js"></script>
+</body>
+</html> 
